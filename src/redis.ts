@@ -40,8 +40,11 @@ export interface Message {
   attachments?: Attachment[];
 }
 
+const REDIS_HOST = process.env.REDIS_HOST || "127.0.0.1";
+const REDIS_PORT = parseInt(process.env.REDIS_PORT || "6379");
+
 function createRedis(): Redis {
-  const r = new Redis({ host: "127.0.0.1", port: 6379, maxRetriesPerRequest: 3, lazyConnect: false });
+  const r = new Redis({ host: REDIS_HOST, port: REDIS_PORT, maxRetriesPerRequest: 3, lazyConnect: false });
   r.on("error", (err) => {
     console.error("[Redis error]", err.message);
   });
@@ -300,7 +303,7 @@ export async function listChannels(): Promise<string[]> {
 }
 
 export function createSubscriber(agentId: string, onMessage: (msg: Message) => void): { close: () => void } {
-  const sub = new Redis({ host: "127.0.0.1", port: 6379, maxRetriesPerRequest: 3 });
+  const sub = new Redis({ host: REDIS_HOST, port: REDIS_PORT, maxRetriesPerRequest: 3 });
   sub.on("error", () => {}); // swallow errors, subscriber is disposable
   const channel = NOTIFY_PREFIX + agentId;
   sub.subscribe(channel).catch(() => {});
