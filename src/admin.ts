@@ -9,7 +9,7 @@
 
 import { Hono } from "hono";
 import { readdirSync, readFileSync, statSync, existsSync } from "fs";
-import { join, extname } from "path";
+import { join, extname, resolve } from "path";
 import { redis, sendMessage, listAgents } from "./redis";
 
 const TASKS_KEY = "konoha:tasks";
@@ -148,7 +148,9 @@ export function createAdminRoutes(): Hono {
   // ---- Project/workspace browser ----
 
   admin.get("/admin/files", async (c) => {
-    const dir = c.req.query("path") || process.cwd();
+    // Resolve to absolute path to prevent traversal attacks (e.g. /home/../etc/passwd)
+    const raw = c.req.query("path") || process.cwd();
+    const dir = resolve(raw);
     // Security: only allow browsing under home or /opt/shared
     const allowed = ["/home", "/opt/shared", process.cwd()];
     const isAllowed = allowed.some((prefix) => dir.startsWith(prefix));

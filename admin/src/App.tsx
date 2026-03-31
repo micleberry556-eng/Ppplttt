@@ -25,7 +25,7 @@ export function App() {
   }
 
   return (
-    <BrowserRouter>
+    <BrowserRouter basename="/panel">
       <Layout onLogout={() => setToken("")}>
         <Routes>
           <Route path="/agents" element={<AgentsPage />} />

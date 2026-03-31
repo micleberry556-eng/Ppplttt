@@ -1,10 +1,8 @@
 import { Hono } from "hono";
 import { bearerAuth } from "hono/bearer-auth";
 import { streamSSE } from "hono/streaming";
-import { serveStatic } from "hono/bun";
-import { mkdirSync, writeFileSync, existsSync, statSync, readFileSync } from "fs";
-import { join, extname, resolve, dirname } from "path";
-import { createAdminRoutes } from "./admin";
+import { mkdirSync, writeFileSync, existsSync, statSync } from "fs";
+import { join, extname } from "path";
 import {
   registerAgent,
   unregisterAgent,
@@ -285,42 +283,7 @@ app.get("/channels/:name/history", async (c) => {
   return c.json(messages);
 });
 
-// --- Admin panel API (tasks, system info, file browser) ---
-
-const adminRoutes = createAdminRoutes();
-// Admin API routes require auth
-app.use("/admin/*", requireAdmin);
-app.route("/", adminRoutes);
-
-// --- Serve admin SPA static files ---
-
-const ADMIN_DIST = resolve(dirname(new URL(import.meta.url).pathname), "../admin/dist");
-
-if (existsSync(ADMIN_DIST)) {
-  // Serve static assets from the admin build
-  app.use(
-    "/panel/*",
-    serveStatic({
-      root: ADMIN_DIST,
-      rewriteRequestPath: (path) => path.replace(/^\/panel/, ""),
-    }),
-  );
-
-  // SPA fallback: serve index.html for any /panel route that doesn't match a file
-  app.get("/panel", (c) => {
-    const html = readFileSync(join(ADMIN_DIST, "index.html"), "utf-8");
-    return c.html(html);
-  });
-  app.get("/panel/*", (c) => {
-    const html = readFileSync(join(ADMIN_DIST, "index.html"), "utf-8");
-    return c.html(html);
-  });
-}
-
 console.log(`Konoha bus listening on port ${PORT}`);
-if (existsSync(ADMIN_DIST)) {
-  console.log(`Admin panel available at http://localhost:${PORT}/panel`);
-}
 export { app };
 export default {
   port: PORT,

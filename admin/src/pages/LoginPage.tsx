@@ -3,11 +3,36 @@ import type { FormEvent } from "react";
 
 export function LoginPage({ onLogin }: { onLogin: (token: string) => void }) {
   const [value, setValue] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  function handleSubmit(e: FormEvent) {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     const trimmed = value.trim();
-    if (trimmed) onLogin(trimmed);
+    if (!trimmed) return;
+
+    setLoading(true);
+    setError("");
+
+    try {
+      // Validate the token by calling /health (no auth) then /agents (requires auth)
+      const res = await fetch("/api/agents", {
+        headers: { Authorization: `Bearer ${trimmed}` },
+      });
+      if (res.status === 401 || res.status === 403) {
+        setError("Invalid token");
+        return;
+      }
+      if (!res.ok) {
+        setError(`Server error: ${res.status}`);
+        return;
+      }
+      onLogin(trimmed);
+    } catch {
+      setError("Cannot connect to server");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -52,16 +77,29 @@ export function LoginPage({ onLogin }: { onLogin: (token: string) => void }) {
         >
           Enter your KONOHA_TOKEN to continue
         </p>
+        {error && (
+          <p
+            style={{
+              color: "#f85149",
+              fontSize: "0.8125rem",
+              textAlign: "center",
+              marginBottom: "0.75rem",
+            }}
+          >
+            {error}
+          </p>
+        )}
         <input
           type="password"
           value={value}
           onChange={(e) => setValue(e.target.value)}
           placeholder="Token"
+          disabled={loading}
           style={{
             width: "100%",
             padding: "0.625rem 0.75rem",
             background: "#0d1117",
-            border: "1px solid #30363d",
+            border: `1px solid ${error ? "#f85149" : "#30363d"}`,
             borderRadius: "6px",
             color: "#e1e4e8",
             fontSize: "0.875rem",
@@ -71,19 +109,21 @@ export function LoginPage({ onLogin }: { onLogin: (token: string) => void }) {
         />
         <button
           type="submit"
+          disabled={loading}
           style={{
             width: "100%",
             padding: "0.625rem",
-            background: "#238636",
+            background: loading ? "#1a7f37" : "#238636",
             color: "#fff",
             border: "none",
             borderRadius: "6px",
             fontSize: "0.875rem",
             fontWeight: 600,
-            cursor: "pointer",
+            cursor: loading ? "wait" : "pointer",
+            opacity: loading ? 0.7 : 1,
           }}
         >
-          Sign In
+          {loading ? "Checking..." : "Sign In"}
         </button>
       </form>
     </div>
