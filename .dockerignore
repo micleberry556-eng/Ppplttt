@@ -1,0 +1,9 @@
+node_modules/
+admin/node_modules/
+admin/dist/
+dist/
+.git/
+*.env
+.agent-env
+.owner-config
+.shared-credentials

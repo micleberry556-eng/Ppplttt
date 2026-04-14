@@ -1,0 +1,40 @@
+# ============================================================================
+# Konoha — Docker Compose
+#
+# Usage:
+#   docker compose up -d
+#
+# Admin panel: http://localhost:3200/panel
+# Bus API:     http://localhost:3200
+# ============================================================================
+
+services:
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  konoha:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "${KONOHA_PORT:-3200}:3200"
+    environment:
+      - KONOHA_PORT=3200
+      - KONOHA_TOKEN=${KONOHA_TOKEN:-konoha-dev-token}
+      - REDIS_HOST=redis
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      - attachments:/opt/shared/attachments
+
+volumes:
+  redis-data:
+  attachments:
